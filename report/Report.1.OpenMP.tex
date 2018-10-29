@@ -1,0 +1,45 @@
+\documentclass{article}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{verbatim}
+\usepackage[english]{babel}
+
+\title{Labwork 1}
+\author{Nguyen Vu Bao Hung}
+\date{Oct 29, 2018}
+\lstset{breaklines=true} 
+
+\begin{document}
+\maketitle
+
+\section{"Convert" sequential to parallel }
+In method labwork1\_OpenMP(), the code is almost the same as in labwork1\_CPU().\\
+The different is that it has a OpenMP directive as below
+\begin{verbatim}
+#pragma omp parallel for
+\end{verbatim}
+
+By using parallel computing, the program's duration is reduce to only a quater of sequential computing.\\
+The detail of the configurations and their output are as below
+
+\begin{verbatim}
+Speedup
+labwork 1 CPU Sequential  ellapsed 2982.3ms
+labwork 1 CPU OpenMP ellapsed 729.2ms
+OpenMP / Sequential ellapses: 24.45% 
+labwork 1 ellapsed 882.8ms
+
+Static
+labwork 1 CPU Sequential  ellapsed 3028.3ms
+labwork 1 CPU OpenMP ellapsed 713.3ms
+OpenMP / Sequential ellapses: 23.55% 
+labwork 1 ellapsed 843.6ms
+
+Dynamic
+labwork 1 CPU Sequential  ellapsed 3007.0ms
+labwork 1 CPU OpenMP ellapsed 707.5ms
+OpenMP / Sequential ellapses: 23.53% 
+labwork 1 ellapsed 804.2ms
+\end{verbatim}
+\end{document}

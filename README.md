@@ -12,5 +12,5 @@ Students are expected to:
 Student Info
 =======================
 
-* Name: MyName
-* ID: *YourIdHere*
+* Name: Nguyen Vu Bao Hung
+* ID: ICT.M7.006

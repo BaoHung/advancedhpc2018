@@ -165,7 +165,11 @@ void Labwork::labwork2_GPU() {
        printf("Device #%d\n", i);
        printf("-Name: %s\n", prop.name);
        printf("-Cores: %d\n", getSPcores(prop));
-       printf("-Clockrate: %d\n\n", prop.clockRate);
+       printf("-Clockrate: %.2f Mhz\n", prop.clockRate*1.0/1000);
+       printf("-Multiprocessors count: %d\n", prop.multiProcessorCount);
+       printf("-Warp size: %d \n", prop.warpSize);
+       printf("-Memory clockrate: %.2f Mhz\n", prop.memoryClockRate*1.0/1000);
+       printf("-Memory Bus width: %d\n\n", prop.memoryBusWidth);
    }
 }
 

@@ -162,9 +162,10 @@ void Labwork::labwork2_GPU() {
    for(int i=0; i<numDevices; i++) {
        cudaDeviceProp prop;
        cudaGetDeviceProperties(&prop, i);
-       printf("Device %d\n", i);
-       printf("Name: %d\n", prop.name);
-       printf("Clockrate: %d\n", prop.clockRate);
+       printf("Device #%d\n", i);
+       printf("-Name: %s\n", prop.name);
+       printf("-Cores: %d\n", getSPcores(prop));
+       printf("-Clockrate: %d\n\n", prop.clockRate);
    }
 }
 

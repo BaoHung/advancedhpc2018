@@ -114,7 +114,10 @@ void Labwork::labwork1_OpenMP() {
     outputImage = static_cast<char *>(malloc(pixelCount * 3));
 //#pragma omp parallel for schedule(dynamic) 
 //#pragma omp parallel for schedule(static) 
-#pragma omp parallel for
+//#pragma omp parallel for
+#pragma omp target teams num_teams(4)
+   {
+    printf("Team number: %d\n", omp_get_team_num());
     for (int j = 0; j < 100; j++) {		// let's do it 100 times, otherwise it's too fast!
         for (int i = 0; i < pixelCount; i++) {
             outputImage[i * 3] = (char) (((int) inputImage->buffer[i * 3] + (int) inputImage->buffer[i * 3 + 1] +
@@ -122,6 +125,7 @@ void Labwork::labwork1_OpenMP() {
             outputImage[i * 3 + 1] = outputImage[i * 3];
             outputImage[i * 3 + 2] = outputImage[i * 3];
         }
+    }
     }
 }
 

@@ -112,6 +112,8 @@ void Labwork::labwork1_CPU() {
 void Labwork::labwork1_OpenMP() {
     int pixelCount = inputImage->width * inputImage->height;
     outputImage = static_cast<char *>(malloc(pixelCount * 3));
+//#pragma omp parallel for schedule(dynamic) 
+//#pragma omp parallel for schedule(static) 
 #pragma omp parallel for
     for (int j = 0; j < 100; j++) {		// let's do it 100 times, otherwise it's too fast!
         for (int i = 0; i < pixelCount; i++) {

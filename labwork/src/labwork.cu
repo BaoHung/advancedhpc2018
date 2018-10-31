@@ -182,7 +182,7 @@ __global__ void grayscale(uchar3 *input, uchar3 *output) {
 
 void Labwork::labwork3_GPU() {
     int pixelCount = inputImage->width * inputImage->height; // number of pixel
-    int blockSize = 64;
+    int blockSize = 1024;
     int numBlock = pixelCount / blockSize;
     uchar3 *devInput, *devGray; // declare device pointers
 

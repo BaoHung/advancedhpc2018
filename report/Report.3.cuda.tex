@@ -1,0 +1,26 @@
+\documentclass{article}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{verbatim}
+\usepackage[english]{babel}
+
+\title{Labwork 3}
+\author{Nguyen Vu Bao Hung}
+\date{Oct 31, 2018}
+\lstset{breaklines=true} 
+
+\begin{document}
+\maketitle
+
+\section{Hello, CUDA}
+First, I create the global kernel "grayscale". It is global since it runs on device and it can be called from host.\\
+Then I do the four classical steps:
+\begin{itemize}
+  \item Load data from host to device (Allocate memory on device, Copy memory from host to device)
+  \item Ask device to process data (Call kernel)
+  \item Device runs in parallel
+  \item Device returns result (Copy memory from device to host, Free memory)
+\end{itemize}
+It took about 70ms to finish. Comparing to CPU processing, it is 10 times faster.
+\end{document}

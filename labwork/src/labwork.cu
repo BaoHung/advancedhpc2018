@@ -173,8 +173,38 @@ void Labwork::labwork2_GPU() {
    }
 }
 
+// implement grayscale kernel
+__global__ void grayscale(uchar3 *input, uchar3 *output) {
+    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    output[tid].x = (input[tid].x + input[tid].y + input[tid].z) / 3;
+    output[tid].z = output[tid].y = output[tid].x;
+}
+
 void Labwork::labwork3_GPU() {
-   
+    int pixelCount = inputImage->width * inputImage->height; // number of pixel
+    int blockSize = 64;
+    int numBlock = pixelCount / blockSize;
+    uchar3 *devInput, *devGray; // declare device pointers
+
+    // Allocate device memory
+    cudaMalloc(&devInput, pixelCount * sizeof(uchar3));
+    cudaMalloc(&devGray, pixelCount * sizeof(float));
+    
+    // Copy from host to device
+    cudaMemcpy(devInput, inputImage->buffer, pixelCount * sizeof(uchar3), cudaMemcpyHostToDevice);
+    
+    // Call kernel
+    grayscale<<<numBlock, blockSize>>>(devInput, devGray);
+
+    // Allocate host memory
+    outputImage = (char*) malloc(pixelCount * sizeof(char) * 3);
+
+    // Copy from Device to host
+    cudaMemcpy(outputImage, devGray, pixelCount * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // Free device memory
+    cudaFree(devInput);
+    cudaFree(devGray);
 }
 
 void Labwork::labwork4_GPU() {

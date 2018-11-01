@@ -188,7 +188,7 @@ void Labwork::labwork3_GPU() {
 
     // Allocate device memory
     cudaMalloc(&devInput, pixelCount * sizeof(uchar3));
-    cudaMalloc(&devGray, pixelCount * sizeof(float));
+    cudaMalloc(&devGray, pixelCount * sizeof(uchar3));
     
     // Copy from host to device
     cudaMemcpy(devInput, inputImage->buffer, pixelCount * sizeof(uchar3), cudaMemcpyHostToDevice);
@@ -207,8 +207,41 @@ void Labwork::labwork3_GPU() {
     cudaFree(devGray);
 }
 
+// implement grayscale2D kernel
+__global__ void grayscale2D(uchar3 *input, uchar3 *output) {
+    int tidx = threadIdx.x + blockIdx.x * blockDim.x;
+    int tidy = threadIdx.y + blockIdx.y * blockDim.y;
+    int tid = (blockDim.x * gridDim.x) * tidy + tidx;
+    output[tid].x = (input[tid].x + input[tid].y + input[tid].z) / 3;
+    output[tid].z = output[tid].y = output[tid].x;
+}
 void Labwork::labwork4_GPU() {
-   
+    int pixelCount = inputImage->width * inputImage->height; // number of pixel
+    int blockSizex = 32;
+    int blockSizey = blockSizex;
+    dim3 gridSize = dim3(inputImage->width/blockSizex+1, inputImage->height/blockSizey+1);
+    dim3 blockSize = dim3(blockSizex, blockSizey);
+    uchar3 *devInput, *devGray; // declare device pointers
+
+    // Allocate device memory
+    cudaMalloc(&devInput, pixelCount * sizeof(uchar3));
+    cudaMalloc(&devGray, pixelCount * sizeof(uchar3));
+    
+    // Copy from host to device
+    cudaMemcpy(devInput, inputImage->buffer, pixelCount * sizeof(uchar3), cudaMemcpyHostToDevice);
+    
+    // Call kernel
+    grayscale2D<<<gridSize, blockSize>>>(devInput, devGray);
+
+    // Allocate host memory
+    outputImage = (char*) malloc(pixelCount * sizeof(char) * 3);
+
+    // Copy from Device to host
+    cudaMemcpy(outputImage, devGray, pixelCount * sizeof(uchar3), cudaMemcpyDeviceToHost);
+
+    // Free device memory
+    cudaFree(devInput);
+    cudaFree(devGray);
 }
 
 // CPU implementation of Gaussian Blur

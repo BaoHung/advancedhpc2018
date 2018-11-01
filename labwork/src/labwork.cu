@@ -200,7 +200,7 @@ void Labwork::labwork3_GPU() {
     outputImage = (char*) malloc(pixelCount * sizeof(char) * 3);
 
     // Copy from Device to host
-    cudaMemcpy(outputImage, devGray, pixelCount * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(outputImage, devGray, pixelCount * sizeof(uchar3), cudaMemcpyDeviceToHost);
 
     // Free device memory
     cudaFree(devInput);
@@ -208,18 +208,21 @@ void Labwork::labwork3_GPU() {
 }
 
 // implement grayscale2D kernel
-__global__ void grayscale2D(uchar3 *input, uchar3 *output) {
+__global__ void grayscale2D(uchar3 *input, uchar3 *output, int imageWidth, int imageHeight) {
     int tidx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (tidx>=imageWidth) return; // check for out of bound index
     int tidy = threadIdx.y + blockIdx.y * blockDim.y;
-    int tid = (blockDim.x * gridDim.x) * tidy + tidx;
+    if (tidy>=imageHeight) return; // check for out of bound index
+    int tid = tidx + tidy * imageWidth;
     output[tid].x = (input[tid].x + input[tid].y + input[tid].z) / 3;
     output[tid].z = output[tid].y = output[tid].x;
 }
 void Labwork::labwork4_GPU() {
     int pixelCount = inputImage->width * inputImage->height; // number of pixel
-    int blockSizex = 32;
+    // int blockSizex = 32;
+    int blockSizex = 8;
     int blockSizey = blockSizex;
-    dim3 gridSize = dim3(inputImage->width/blockSizex+1, inputImage->height/blockSizey+1);
+    dim3 gridSize = dim3((inputImage->width+blockSizex-1)/blockSizex, (inputImage->height+blockSizey-1)/blockSizey);
     dim3 blockSize = dim3(blockSizex, blockSizey);
     uchar3 *devInput, *devGray; // declare device pointers
 
@@ -231,7 +234,7 @@ void Labwork::labwork4_GPU() {
     cudaMemcpy(devInput, inputImage->buffer, pixelCount * sizeof(uchar3), cudaMemcpyHostToDevice);
     
     // Call kernel
-    grayscale2D<<<gridSize, blockSize>>>(devInput, devGray);
+    grayscale2D<<<gridSize, blockSize>>>(devInput, devGray, inputImage->width, inputImage->height);
 
     // Allocate host memory
     outputImage = (char*) malloc(pixelCount * sizeof(char) * 3);

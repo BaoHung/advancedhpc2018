@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
             labwork.saveOutputImage("labwork4-gpu-out.jpg");
             break;
         case 5:
-            float cpuTime, gpuTime;
+            float cpuTime, gpuTime, gpuNonShared;
             timer.start();
             labwork.labwork5_CPU();
             cpuTime = timer.getElapsedTimeInMilliSec();
@@ -68,9 +68,15 @@ int main(int argc, char **argv) {
             timer.start();
             labwork.labwork5_GPU();
             gpuTime = timer.getElapsedTimeInMilliSec();
-            printf("Labwork 5 GPU ellapsed %.1fms\n", lwNum, gpuTime);
+            printf("Labwork 5 GPU with shared memory ellapsed %.1fms\n", lwNum, gpuTime);
             labwork.saveOutputImage("labwork5-gpu-out.jpg");
-            printf("GPU is faster by: %.2f times\n", cpuTime/gpuTime);
+
+            timer.start();
+            labwork.labwork5_GPU_NonSharedMemory();
+            gpuNonShared = timer.getElapsedTimeInMilliSec();
+            printf("Labwork 5 GPU without shared memory ellapsed %.1fms\n", lwNum, gpuNonShared);
+            printf("GPU with shared memory is faster than GPU without shared memory by: %.2f times\n", gpuNonShared/gpuTime);
+            printf("GPU with shared memory is faster than CPU by: %.2f times\n", cpuTime/gpuTime);
             break;
         case 6:
             labwork.labwork6_GPU();
@@ -297,7 +303,7 @@ __global__ void gaussianBlur(uchar3 *input, uchar3 *output, int *weights, int im
     if (tidx>=imageWidth) return; // check for out of bound index
     int tidy = threadIdx.y + blockIdx.y * blockDim.y;
     if (tidy>=imageHeight) return; // check for out of bound index
-    int tid = tidx + tidy * imageWidth;
+    int posOut = tidx + tidy * imageWidth;
 
     __shared__ int sweights[49];
     int pos;
@@ -317,6 +323,7 @@ __global__ void gaussianBlur(uchar3 *input, uchar3 *output, int *weights, int im
             if (i >= imageWidth) continue;
             if (j < 0) continue;
             if (j >= imageHeight) continue;
+            int tid = j * imageWidth + i;
             unsigned char gray = (input[tid].x + input[tid].y + input[tid].z) / 3;
             int coefficient = sweights[(y+3) * 7 + x + 3];
             sum = sum + gray * coefficient;
@@ -324,7 +331,7 @@ __global__ void gaussianBlur(uchar3 *input, uchar3 *output, int *weights, int im
         }
     }
     sum /= c;
-    output[tid].z = output[tid].y = output[tid].x = sum;
+    output[posOut].z = output[posOut].y = output[posOut].x = sum;
 }
 void Labwork::labwork5_GPU() {
     int weights[] = { 0, 0, 1, 2, 1, 0, 0,  
@@ -353,6 +360,74 @@ void Labwork::labwork5_GPU() {
     
     // Call kernel
     gaussianBlur<<<gridSize, blockSize>>>(devInput, devGray, kernel, inputImage->width, inputImage->height);
+
+    // Allocate host memory
+    outputImage = (char*) malloc(pixelCount * sizeof(char) * 3);
+
+    // Copy from Device to host
+    cudaMemcpy(outputImage, devGray, pixelCount * sizeof(uchar3), cudaMemcpyDeviceToHost);
+
+    // Free device memory
+    cudaFree(devInput);
+    cudaFree(devGray);
+    cudaFree(kernel);
+}
+
+__global__ void gaussianBlurNonShared(uchar3 *input, uchar3 *output, int *weights, int imageWidth, int imageHeight) {
+    int tidx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (tidx>=imageWidth) return; // check for out of bound index
+    int tidy = threadIdx.y + blockIdx.y * blockDim.y;
+    if (tidy>=imageHeight) return; // check for out of bound index
+    int posOut = tidx + tidy * imageWidth;
+
+    int sum = 0;
+    int c = 0;
+    for (int y = -3; y <= 3; y++) {
+        for (int x = -3; x <= 3; x++) {
+            int i = tidx + x;
+            int j = tidy + y;
+            if (i < 0) continue;
+            if (i >= imageWidth) continue;
+            if (j < 0) continue;
+            if (j >= imageHeight) continue;
+            int tid = j * imageWidth + i;
+            unsigned char gray = (input[tid].x + input[tid].y + input[tid].z) / 3;
+            int coefficient = weights[(y+3) * 7 + x + 3];
+            sum = sum + gray * coefficient;
+            c += coefficient;
+        }
+    }
+    sum /= c;
+    output[posOut].z = output[posOut].y = output[posOut].x = sum;
+}
+
+void Labwork::labwork5_GPU_NonSharedMemory() {
+        int weights[] = { 0, 0, 1, 2, 1, 0, 0,  
+                 0, 3, 13, 22, 13, 3, 0,  
+                 1, 13, 59, 97, 59, 13, 1,  
+                 2, 22, 97, 159, 97, 22, 2,  
+                 1, 13, 59, 97, 59, 13, 1,  
+                 0, 3, 13, 22, 13, 3, 0,
+                 0, 0, 1, 2, 1, 0, 0 };
+    int pixelCount = inputImage->width * inputImage->height; // number of pixel
+    int blockSizex = 16;
+    int blockSizey = 8;
+    dim3 gridSize = dim3((inputImage->width+blockSizex-1)/blockSizex, (inputImage->height+blockSizey-1)/blockSizey);
+    dim3 blockSize = dim3(blockSizex, blockSizey);
+    uchar3 *devInput, *devGray; // declare device pointers
+    int *kernel;
+
+    // Allocate device memory
+    cudaMalloc(&devInput, pixelCount * sizeof(uchar3));
+    cudaMalloc(&devGray, pixelCount * sizeof(uchar3));
+    cudaMalloc(&kernel, sizeof(weights));
+    
+    // Copy from host to device
+    cudaMemcpy(devInput, inputImage->buffer, pixelCount * sizeof(uchar3), cudaMemcpyHostToDevice);
+    cudaMemcpy(kernel, weights, sizeof(weights), cudaMemcpyHostToDevice);
+    
+    // Call kernel
+    gaussianBlurNonShared<<<gridSize, blockSize>>>(devInput, devGray, kernel, inputImage->width, inputImage->height);
 
     // Allocate host memory
     outputImage = (char*) malloc(pixelCount * sizeof(char) * 3);

@@ -284,8 +284,68 @@ void Labwork::labwork5_CPU() {
     }
 }
 
+__global__ void gaussianBlur(uchar3 *input, uchar3 *output, int imageWidth, int imageHeight) {
+    int weights[] = { 0, 0, 1, 2, 1, 0, 0,  
+                 0, 3, 13, 22, 13, 3, 0,  
+                 1, 13, 59, 97, 59, 13, 1,  
+                 2, 22, 97, 159, 97, 22, 2,  
+                 1, 13, 59, 97, 59, 13, 1,  
+                 0, 3, 13, 22, 13, 3, 0,
+                 0, 0, 1, 2, 1, 0, 0 };
+
+    int tidx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (tidx>=imageWidth) return; // check for out of bound index
+    int tidy = threadIdx.y + blockIdx.y * blockDim.y;
+    if (tidy>=imageHeight) return; // check for out of bound index
+    int tid = tidx + tidy * imageWidth;
+
+    // int pixelCount = imageWidth * imageHeight;
+    int sum = 0;
+    int c = 0;
+    for (int y = -3; y <= 3; y++) {
+        for (int x = -3; x <= 3; x++) {
+            int i = tidx + x;
+            int j = tidy + y;
+            if (i < 0) continue;
+            if (i >= imageWidth) continue;
+            if (j < 0) continue;
+            if (j >= imageHeight) continue;
+            unsigned char gray = (input[tid].x + input[tid].y + input[tid].z) / 3;
+            int coefficient = weights[(y+3) * 7 + x + 3];
+            sum = sum + gray * coefficient;
+            c += coefficient;
+        }
+    }
+    sum /= c;
+    output[tid].z = output[tid].y = output[tid].x = sum;
+}
 void Labwork::labwork5_GPU() {
+    int pixelCount = inputImage->width * inputImage->height; // number of pixel
+    int blockSizex = 32;
+    int blockSizey = blockSizex;
+    dim3 gridSize = dim3((inputImage->width+blockSizex-1)/blockSizex, (inputImage->height+blockSizey-1)/blockSizey);
+    dim3 blockSize = dim3(blockSizex, blockSizey);
+    uchar3 *devInput, *devGray; // declare device pointers
+
+    // Allocate device memory
+    cudaMalloc(&devInput, pixelCount * sizeof(uchar3));
+    cudaMalloc(&devGray, pixelCount * sizeof(uchar3));
     
+    // Copy from host to device
+    cudaMemcpy(devInput, inputImage->buffer, pixelCount * sizeof(uchar3), cudaMemcpyHostToDevice);
+    
+    // Call kernel
+    gaussianBlur<<<gridSize, blockSize>>>(devInput, devGray, inputImage->width, inputImage->height);
+
+    // Allocate host memory
+    outputImage = (char*) malloc(pixelCount * sizeof(char) * 3);
+
+    // Copy from Device to host
+    cudaMemcpy(outputImage, devGray, pixelCount * sizeof(uchar3), cudaMemcpyDeviceToHost);
+
+    // Free device memory
+    cudaFree(devInput);
+    cudaFree(devGray);
 }
 
 void Labwork::labwork6_GPU() {

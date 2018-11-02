@@ -63,18 +63,21 @@ int main(int argc, char **argv) {
             timer.start();
             labwork.labwork5_CPU();
             cpuTime = timer.getElapsedTimeInMilliSec();
-            printf("Labwork 5 CPU ellapsed %.1fms\n", lwNum, cpuTime);
+
             labwork.saveOutputImage("labwork5-cpu-out.jpg");
-            timer.start();
-            labwork.labwork5_GPU();
-            gpuTime = timer.getElapsedTimeInMilliSec();
-            printf("Labwork 5 GPU with shared memory ellapsed %.1fms\n", lwNum, gpuTime);
 
             timer.start();
             labwork.labwork5_GPU_NonSharedMemory();
             gpuNonShared = timer.getElapsedTimeInMilliSec();
 
+            timer.start();
+            labwork.labwork5_GPU();
+            gpuTime = timer.getElapsedTimeInMilliSec();
+
             labwork.saveOutputImage("labwork5-gpu-out.jpg");
+
+            printf("Labwork 5 CPU ellapsed %.1fms\n", lwNum, cpuTime);
+            printf("Labwork 5 GPU with shared memory ellapsed %.1fms\n", lwNum, gpuTime);
             printf("Labwork 5 GPU without shared memory ellapsed %.1fms\n", lwNum, gpuNonShared);
             printf("GPU with shared memory is faster than GPU without shared memory by: %.2f times\n", gpuNonShared/gpuTime);
             printf("GPU with shared memory is faster than CPU by: %.2f times\n", cpuTime/gpuTime);
@@ -306,11 +309,11 @@ __global__ void gaussianBlur(uchar3 *input, uchar3 *output, int *weights, int im
     if (tidy>=imageHeight) return; // check for out of bound index
     int posOut = tidx + tidy * imageWidth;
 
+    // Shared memory: each thread of the first 49 threads copy one element of weights
     __shared__ int sweights[49];
-    int pos;
-    for (pos = 0; pos < 49; ++pos)
-    {
-        sweights[pos]= weights[pos];
+    int localTid = threadIdx.x + threadIdx.y * blockDim.x;
+    if (localTid < 49) {
+        sweights[localTid] = weights[localTid];
     }
     __syncthreads();
 

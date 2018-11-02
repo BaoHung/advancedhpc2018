@@ -38,12 +38,12 @@ int main(int argc, char **argv) {
             labwork.labwork1_CPU();
 	    seqTime = timer.getElapsedTimeInMilliSec();
             printf("labwork 1 CPU Sequential  ellapsed %.1fms\n", lwNum, seqTime);
-            labwork.saveOutputImage("labwork2-cpu-out.jpg");
+            labwork.saveOutputImage("labwork1-cpu-out.jpg");
             timer.start();
             labwork.labwork1_OpenMP();
 	    ompTime = timer.getElapsedTimeInMilliSec();
             printf("labwork 1 CPU OpenMP ellapsed %.1fms\n", lwNum, ompTime);
-            labwork.saveOutputImage("labwork2-openmp-out.jpg");
+            labwork.saveOutputImage("labwork1-openmp-out.jpg");
 
 	    printf("OpenMP / Sequential ellapses: %.2f%% \n", ompTime/seqTime*100);
             break;

@@ -69,11 +69,12 @@ int main(int argc, char **argv) {
             labwork.labwork5_GPU();
             gpuTime = timer.getElapsedTimeInMilliSec();
             printf("Labwork 5 GPU with shared memory ellapsed %.1fms\n", lwNum, gpuTime);
-            labwork.saveOutputImage("labwork5-gpu-out.jpg");
 
             timer.start();
             labwork.labwork5_GPU_NonSharedMemory();
             gpuNonShared = timer.getElapsedTimeInMilliSec();
+
+            labwork.saveOutputImage("labwork5-gpu-out.jpg");
             printf("Labwork 5 GPU without shared memory ellapsed %.1fms\n", lwNum, gpuNonShared);
             printf("GPU with shared memory is faster than GPU without shared memory by: %.2f times\n", gpuNonShared/gpuTime);
             printf("GPU with shared memory is faster than CPU by: %.2f times\n", cpuTime/gpuTime);

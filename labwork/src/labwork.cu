@@ -59,10 +59,18 @@ int main(int argc, char **argv) {
             labwork.saveOutputImage("labwork4-gpu-out.jpg");
             break;
         case 5:
+            float cpuTime, gpuTime;
+            timer.start();
             labwork.labwork5_CPU();
+            cpuTime = timer.getElapsedTimeInMilliSec();
+            printf("Labwork 5 CPU ellapsed %.1fms\n", lwNum, cpuTime);
             labwork.saveOutputImage("labwork5-cpu-out.jpg");
+            timer.start();
             labwork.labwork5_GPU();
+            gpuTime = timer.getElapsedTimeInMilliSec();
+            printf("Labwork 5 GPU ellapsed %.1fms\n", lwNum, gpuTime);
             labwork.saveOutputImage("labwork5-gpu-out.jpg");
+            printf("GPU is faster by: %.2f times\n", cpuTime/gpuTime);
             break;
         case 6:
             labwork.labwork6_GPU();

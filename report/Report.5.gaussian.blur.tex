@@ -1,0 +1,27 @@
+\documentclass{article}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{verbatim}
+\usepackage[english]{babel}
+
+\title{Labwork 3}
+\author{Nguyen Vu Bao Hung}
+\date{Nov 1, 2018}
+\lstset{breaklines=true} 
+
+\begin{document}
+\maketitle
+
+\section{Gaussian Blur Convolution}
+To do the Gaussian Blur, each new pixel is calculated as the weighted average of surrounding pixels.\\
+With shared memory, each thread of the first 49 threads copy one element of weights array to the shared memory.\\
+The result goes as below.
+\begin{verbatim}
+Labwork 5 CPU ellapsed 1665.8ms
+Labwork 5 GPU with shared memory ellapsed 27.4ms
+Labwork 5 GPU without shared memory ellapsed 37.9ms
+GPU with shared memory is faster than GPU without shared memory by: 1.38 times
+GPU with shared memory is faster than CPU by: 60.72 times
+\end{verbatim}
+\end{document}

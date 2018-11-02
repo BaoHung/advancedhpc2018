@@ -406,13 +406,13 @@ __global__ void gaussianBlurNonShared(uchar3 *input, uchar3 *output, int *weight
 }
 
 void Labwork::labwork5_GPU_NonSharedMemory() {
-        int weights[] = { 0, 0, 1, 2, 1, 0, 0,  
-                 0, 3, 13, 22, 13, 3, 0,  
-                 1, 13, 59, 97, 59, 13, 1,  
-                 2, 22, 97, 159, 97, 22, 2,  
-                 1, 13, 59, 97, 59, 13, 1,  
-                 0, 3, 13, 22, 13, 3, 0,
-                 0, 0, 1, 2, 1, 0, 0 };
+    int weights[] = { 0, 0, 1, 2, 1, 0, 0,  
+             0, 3, 13, 22, 13, 3, 0,  
+             1, 13, 59, 97, 59, 13, 1,  
+             2, 22, 97, 159, 97, 22, 2,  
+             1, 13, 59, 97, 59, 13, 1,  
+             0, 3, 13, 22, 13, 3, 0,
+             0, 0, 1, 2, 1, 0, 0 };
     int pixelCount = inputImage->width * inputImage->height; // number of pixel
     int blockSizex = 16;
     int blockSizey = 8;

@@ -84,7 +84,6 @@ int main(int argc, char **argv) {
             break;
         case 6:
             labwork.labwork6_GPU();
-            labwork.saveOutputImage("labwork6-gpu-out.jpg");
             break;
         case 7:
             labwork.labwork7_GPU();
@@ -445,8 +444,63 @@ void Labwork::labwork5_GPU_NonSharedMemory() {
     cudaFree(kernel);
 }
 
-void Labwork::labwork6_GPU() {
+__global__ void grayscale2Dbinary(uchar3 *input, uchar3 *output, int imageWidth, int imageHeight, int threadshold) {
+    int tidx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (tidx>=imageWidth) return; // check for out of bound index
+    int tidy = threadIdx.y + blockIdx.y * blockDim.y;
+    if (tidy>=imageHeight) return; // check for out of bound index
+    int tid = tidx + tidy * imageWidth;
+    output[tid].x = (input[tid].x + input[tid].y + input[tid].z) / 3 / threadshold * 255;
+    output[tid].z = output[tid].y = output[tid].x;
+}
 
+// __global__ void grayscale2Dbrightness(uchar3 *input, uchar3 *output, int imageWidth, int imageHeight, int threadshold) {
+//     int tidx = threadIdx.x + blockIdx.x * blockDim.x;
+//     if (tidx>=imageWidth) return; // check for out of bound index
+//     int tidy = threadIdx.y + blockIdx.y * blockDim.y;
+//     if (tidy>=imageHeight) return; // check for out of bound index
+//     int tid = tidx + tidy * imageWidth;
+//     output[tid].x = (input[tid].x + input[tid].y + input[tid].z) / 3 * 1.5;
+//     output[tid].z = output[tid].y = output[tid].x;
+// }
+
+void Labwork::labwork6_GPU() {
+    int threadshold = 128;
+    printf("Enter your threadshold from 0 to 255 (Be chill, I don't do validation): ");
+    scanf("%d", &threadshold);
+
+    Timer t;
+    t.start();
+
+    int pixelCount = inputImage->width * inputImage->height; // number of pixel
+    int blockSizex = 8;
+    int blockSizey = blockSizex;
+    dim3 gridSize = dim3((inputImage->width+blockSizex-1)/blockSizex, (inputImage->height+blockSizey-1)/blockSizey);
+    dim3 blockSize = dim3(blockSizex, blockSizey);
+    uchar3 *devInput, *devGray; // declare device pointers
+
+    // Allocate device memory
+    cudaMalloc(&devInput, pixelCount * sizeof(uchar3));
+    cudaMalloc(&devGray, pixelCount * sizeof(uchar3));
+    
+    // Copy from host to device
+    cudaMemcpy(devInput, inputImage->buffer, pixelCount * sizeof(uchar3), cudaMemcpyHostToDevice);
+    
+    // Call kernel
+    grayscale2Dbinary<<<gridSize, blockSize>>>(devInput, devGray, inputImage->width, inputImage->height, threadshold);
+
+    // Allocate host memory
+    outputImage = (char*) malloc(pixelCount * sizeof(char) * 3);
+
+    // Copy from Device to host
+    cudaMemcpy(outputImage, devGray, pixelCount * sizeof(uchar3), cudaMemcpyDeviceToHost);
+
+    // Free device memory
+    cudaFree(devInput);
+    cudaFree(devGray);
+    saveOutputImage("labwork6-gpu-out-a.jpg");
+    float d = t.getElapsedTimeInMilliSec();
+    printf("Binarization takes: %.2fms\n", d);
 }
 
 void Labwork::labwork7_GPU() {
